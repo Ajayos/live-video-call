@@ -95,9 +95,7 @@ stopVideo.addEventListener("click",() => {
 })
 
 inviteButton.addEventListener("click",() => {
-  prompt("Copy this link and send it to people you want to have video call with",
-  window.location.href
-  );
+  navigator.clipboard.writeText(window.location.href);
 })
 
 disconnectBtn.addEventListener("click",() => {
@@ -107,5 +105,5 @@ disconnectBtn.addEventListener("click",() => {
     myVideoElement.remove();
   }
   socket.emit("disconnect");
-  window.location.href = "https://www.google.com";
+  // window.location.href = "https://www.google.com";
 })
