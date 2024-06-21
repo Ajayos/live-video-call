@@ -1,42 +1,47 @@
 const express = require("express");
 const app = express();
 const server = require("http").Server(app);
-app.set('view engine','ejs')
-app.use(express.static('public'))
-const {v4:uuidv4} = require("uuid")
+const { v4: uuidv4 } = require("uuid");
 const io = require("socket.io")(server, {
   cors: {
-    origin: '*'
-  }
+    origin: "*",
+  },
 });
-const {ExpressPeerServer} = require("peer");
-const peerServer = ExpressPeerServer(server,{
-    debug: true
+const { ExpressPeerServer } = require("peer");
+const peerServer = ExpressPeerServer(server, {
+  debug: true,
 });
 
-app.use("/peerjs",peerServer);
+app.set("view engine", "ejs");
+app.use(express.static("public"));
 
-app.get('/',(req,res) => {
-  // res.send("Hello World")
+// Use PeerServer path
+app.use("/peerjs", peerServer);
+
+app.get("/", (req, res) => {
   res.redirect(`/${uuidv4()}`);
-})
+});
 
-app.get('/:room',(req,res) => {
-    res.render("room",{roomId: req.params.room})
-})
+app.get("/:room", (req, res) => {
+  res.render("room", { roomId: req.params.room });
+});
 
 io.on("connection", (socket) => {
-    socket.on("join-room", (roomId, userId) => {
-      socket.join(roomId);
-      setTimeout(()=>{
-        socket.to(roomId).broadcast.emit("user-connected", userId);
-      }, 1000)
-    
-    socket.on("disconnect",() => {
-        console.log("User Disconnected");
-        io.emit("user-disconnected",userId)
-    })
-});
-  });
+  socket.on("join-room", (roomId, userId) => {
+    socket.join(roomId);
+    // Emit user-connected event to room after 1 second
+    setTimeout(() => {
+      socket.to(roomId).broadcast.emit("user-connected", userId);
+    }, 1000);
 
-server.listen(process.env.PORT ||3030);
+    socket.on("disconnect", () => {
+      console.log("User Disconnected");
+      io.to(roomId).emit("user-disconnected", userId);
+    });
+  });
+});
+
+const PORT = process.env.PORT || 3030;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
