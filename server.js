@@ -1,13 +1,26 @@
 const express = require("express");
-const app = express();
-const server = require("http").Server(app);
+const fs = require("fs");
+const https = require("https");
 const { v4: uuidv4 } = require("uuid");
-const io = require("socket.io")(server, {
+const socketIO = require("socket.io");
+const { ExpressPeerServer } = require("peer");
+
+const app = express();
+
+// SSL Certificates
+const options = {
+  key: fs.readFileSync("./server.key"),  // replace with your actual file path
+  cert: fs.readFileSync("./server.crt") // replace with your actual file path
+};
+
+// Create HTTPS server
+const server = https.createServer(options, app);
+const io = socketIO(server, {
   cors: {
     origin: "*",
   },
 });
-const { ExpressPeerServer } = require("peer");
+
 const peerServer = ExpressPeerServer(server, {
   debug: true,
 });
@@ -29,7 +42,6 @@ app.get("/:room", (req, res) => {
 io.on("connection", (socket) => {
   socket.on("join-room", (roomId, userId) => {
     socket.join(roomId);
-    // Emit user-connected event to room after 1 second
     setTimeout(() => {
       socket.to(roomId).broadcast.emit("user-connected", userId);
     }, 1000);
@@ -43,5 +55,5 @@ io.on("connection", (socket) => {
 
 const PORT = process.env.PORT || 3030;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on HTTPS port ${PORT}`);
 });
